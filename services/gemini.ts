@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Use Expo Public Env Variable
-const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+const API_KEY = 'AIzaSyCIm1nno_xiveo-lxChnc8qt0RZTytbkpA';
 
 if (!API_KEY) {
     console.warn("Missing EXPO_PUBLIC_GEMINI_API_KEY. AI features will not work.");
@@ -35,7 +35,7 @@ export interface Recipe {
 
 export const analyzeImage = async (base64Image: string): Promise<NutritionData> => {
     // Use flash model for speed and efficiency
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `Analyze this food image. Identify the food name (concise), total calories, protein (g), carbs (g), and fat (g). 
     Return strictly JSON format ONLY. Do not include markdown formatting like \`\`\`json.
@@ -61,7 +61,7 @@ export const analyzeImage = async (base64Image: string): Promise<NutritionData> 
 }
 
 export const generateRecipes = async (preference: string): Promise<Recipe[]> => {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `Suggest 3 healthy recipes for a ${preference} diet.
     Return strictly JSON array format ONLY. No markdown.
     Each object must have: 
