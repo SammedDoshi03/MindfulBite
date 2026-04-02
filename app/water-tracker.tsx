@@ -2,7 +2,6 @@ import Colors from '@/constants/Colors';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addWater, setWaterState, updateDate } from '@/store/slices/waterSlice';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
@@ -16,48 +15,14 @@ export default function WaterTrackerScreen() {
     // Redux State
     const { intake, goal, date } = useAppSelector((state: any) => state.water);
 
-    // Persistence & Daily Reset Logic
+    // Persistence: Daily Reset Logic ONLY (Memory loading is now handled by Redux Persist)
     React.useEffect(() => {
-        const load = async () => {
-            try {
-                // 1. Get today's date string
-                const today = new Date().toISOString().split('T')[0];
-
-                // 2. Load saved state
-                const saved = await AsyncStorage.getItem('water_state');
-
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-
-                    if (parsed.date !== today) {
-                        // NEW DAY: Archive old data and reset
-                        await AsyncStorage.setItem('water_history_' + parsed.date, JSON.stringify(parsed));
-                        // Dispatch update to new day (resets intake to 0)
-                        dispatch(updateDate(today));
-                    } else {
-                        // SAME DAY: Hydrate Redux
-                        dispatch(setWaterState(parsed));
-                    }
-                } else {
-                    // No save found, just ensure date is right
-                    dispatch(updateDate(today));
-                }
-            } catch (e) {
-                console.error("Failed to load water state", e);
-            }
-        };
-        load();
-    }, []);
-
-    // Save on Change
-    React.useEffect(() => {
-        const save = async () => {
-            await AsyncStorage.setItem('water_state', JSON.stringify({ intake, goal, date }));
-        };
-        save();
-    }, [intake, goal, date]);
-
-
+        const today = new Date().toISOString().split('T')[0];
+        if (date !== today) {
+            // New Day! Re-dispatch date update to trigger reset
+            dispatch(updateDate(today));
+        }
+    }, [date, dispatch]);
     // Calculate fill percentage (clamped 0-1)
     const percentage = goal > 0 ? Math.min(Math.max(intake / goal, 0), 1) : 0;
 

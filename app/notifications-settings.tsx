@@ -99,24 +99,24 @@ export default function NotificationsSettingsScreen() {
 
             // Schedule Breakfast
             scheduleNotification("Breakfast Time!", "Don't forget to log your breakfast 🍳", {
-                type: 'calendar', hour: breakfastTime.getHours(), minute: breakfastTime.getMinutes(), repeats: true
-            });
+                hour: breakfastTime.getHours(), minute: breakfastTime.getMinutes(), repeats: true
+            } as Notifications.NotificationTriggerInput);
             // Schedule Lunch
             scheduleNotification("Lunch Time!", "What's for lunch today? 🥗", {
-                type: 'calendar', hour: lunchTime.getHours(), minute: lunchTime.getMinutes(), repeats: true
-            });
+                hour: lunchTime.getHours(), minute: lunchTime.getMinutes(), repeats: true
+            } as Notifications.NotificationTriggerInput);
             // Schedule Dinner
             scheduleNotification("Dinner Time!", "Time to log your dinner 🍽️", {
-                type: 'calendar', hour: dinnerTime.getHours(), minute: dinnerTime.getMinutes(), repeats: true
-            });
+                hour: dinnerTime.getHours(), minute: dinnerTime.getMinutes(), repeats: true
+            } as Notifications.NotificationTriggerInput);
         }
 
         if (settings.waterReminders) {
             // Schedule repeating water reminder every 3 hours between 9am and 8pm.
             for (let i = 9; i <= 20; i += 3) {
                 scheduleNotification("Hydration Check", "Time to drink some water! 💧", {
-                    type: 'calendar', hour: i, minute: 0, repeats: true
-                });
+                    hour: i, minute: 0, repeats: true
+                } as Notifications.NotificationTriggerInput);
             }
         }
     };

@@ -6,19 +6,27 @@ import { analyzeImage, NutritionData } from '@/services/gemini';
 import { useAppDispatch } from '@/store/hooks';
 import { addMeal } from '@/store/slices/logSlice';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { legacy as FileSystem } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system';
 // @ts-ignore
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useMutation } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle } from 'react-native-svg';
+import Svg from 'react-native-svg';
+import MacroCircle from '@/components/MacroCircle';
+import BarcodeScannerModal from '@/components/BarcodeScannerModal';
+
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LogScreen() {
+    const insets = useSafeAreaInsets();
+    const [permission, requestPermission] = useCameraPermissions();
+    const [scannerVisible, setScannerVisible] = useState(false);
     const [image, setImage] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<NutritionData | null>(null);
     const [mealType, setMealType] = useState('Breakfast');
     const router = useRouter();
     const dispatch = useAppDispatch();
@@ -51,23 +59,57 @@ export default function LogScreen() {
 
         if (!result.canceled) {
             setImage(result.assets[0].uri);
-            setResult(null); // Reset previous result
+            analyzeMutation.reset(); // Reset previous result
         }
     };
 
-    const handleAnalyze = async () => {
-        if (!image) return;
-        setLoading(true);
-        try {
-            const base64 = await FileSystem.readAsStringAsync(image, { encoding: 'base64' });
-            const data = await analyzeImage(base64);
-            setResult(data);
-        } catch (error) {
+    const analyzeMutation = useMutation({
+        mutationFn: async (imgUri: string) => {
+            const manipulatedImage = await ImageManipulator.manipulateAsync(
+                imgUri,
+                [{ resize: { width: 800 } }],
+                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+            );
+            const base64 = await FileSystem.readAsStringAsync(manipulatedImage.uri, { encoding: 'base64' });
+            return await analyzeImage(base64);
+        },
+        onError: (error) => {
             console.error(error);
             Alert.alert('Error', 'Failed to analyze image. Please try again.');
-        } finally {
-            setLoading(false);
         }
+    });
+
+    const barcodeMutation = useMutation({
+        mutationFn: async (barcode: string) => {
+            const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
+            const data = await res.json();
+            if (data.status === 1) {
+                return {
+                    foodName: data.product.product_name || "Unknown Product",
+                    calories: Math.round(data.product.nutriments?.['energy-kcal_100g'] || 0),
+                    protein: Math.round(data.product.nutriments?.proteins_100g || 0),
+                    carbs: Math.round(data.product.nutriments?.carbohydrates_100g || 0),
+                    fat: Math.round(data.product.nutriments?.fat_100g || 0)
+                } as NutritionData;
+            }
+            throw new Error('Product not found in database');
+        },
+        onError: (error) => {
+            console.error(error);
+            Alert.alert('Scan Failed', 'Could not find macros for this barcode.');
+            setScannerVisible(false);
+        },
+        onSuccess: (data) => {
+            setScannerVisible(false);
+        }
+    });
+
+    const result = analyzeMutation.data || barcodeMutation.data;
+    const loading = analyzeMutation.isPending || barcodeMutation.isPending;
+
+    const handleAnalyze = () => {
+        if (!image) return;
+        analyzeMutation.mutate(image);
     };
 
     const handleSave = () => {
@@ -84,7 +126,8 @@ export default function LogScreen() {
             }));
             Alert.alert('Success', 'Meal logged successfully!');
             setImage(null);
-            setResult(null);
+            analyzeMutation.reset();
+            barcodeMutation.reset();
             router.push('/(tabs)');
         }
     };
@@ -115,40 +158,10 @@ export default function LogScreen() {
         router.push('/(tabs)');
     };
 
-    const MacroCircle = ({ value, label, color, max }: { value: number, label: string, color: string, max: number }) => {
-        const radius = 16;
-        const circumference = 2 * Math.PI * radius;
-        const progress = Math.min(value / max, 1);
-        const strokeDashoffset = circumference - progress * circumference;
 
-        return (
-            <View style={styles.macroItem}>
-                <View style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
-                    <Svg width="40" height="40" viewBox="0 0 40 40">
-                        <Circle cx="20" cy="20" r={radius} stroke="#374151" strokeWidth="4" fill="transparent" />
-                        <Circle
-                            cx="20"
-                            cy="20"
-                            r={radius}
-                            stroke={color}
-                            strokeWidth="4"
-                            fill="transparent"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={strokeDashoffset}
-                            strokeLinecap="round"
-                            rotation="-90"
-                            origin="20, 20"
-                        />
-                    </Svg>
-                    <Text style={[styles.macroValueAbsolute, { color: Colors.dark.text }]}>{value}</Text>
-                </View>
-                <Text style={styles.macroLabel}>{label}</Text>
-            </View>
-        );
-    };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { paddingBottom: insets.bottom }]}>
             {/* Top App Bar */}
             <View style={styles.appBar}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -186,7 +199,10 @@ export default function LogScreen() {
                     <View style={styles.searchBar}>
                         <Ionicons name="search" size={20} color="#9CA3AF" />
                         <Text style={styles.searchPlaceholder}>Search food database...</Text>
-                        <TouchableOpacity style={styles.scanButton}>
+                        <TouchableOpacity style={styles.scanButton} onPress={() => {
+                            if (!permission?.granted) requestPermission();
+                            setScannerVisible(true);
+                        }}>
                             <Ionicons name="barcode-outline" size={20} color="#6B7280" />
                         </TouchableOpacity>
                     </View>
@@ -237,7 +253,7 @@ export default function LogScreen() {
                                     )}
                                     {loading && <Text style={{ color: Colors.dark.primary, marginTop: 8 }}>Analyzing...</Text>}
 
-                                    <TouchableOpacity onPress={() => { setImage(null); setResult(null) }} style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
+                                    <TouchableOpacity onPress={() => { setImage(null); analyzeMutation.reset(); barcodeMutation.reset(); }} style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
                                         <Text style={{ color: Colors.dark.primary, fontSize: 12, fontWeight: '600' }}>Retake Photo</Text>
                                         <Ionicons name="camera-outline" size={14} color={Colors.dark.primary} style={{ marginLeft: 4 }} />
                                     </TouchableOpacity>
@@ -345,6 +361,18 @@ export default function LogScreen() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Barcode Scanner Modal Component HOC */}
+            <BarcodeScannerModal
+                visible={scannerVisible}
+                onClose={() => setScannerVisible(false)}
+                hasPermission={!!permission?.granted}
+                onScan={(data) => {
+                    if (!barcodeMutation.isPending && !barcodeMutation.data) {
+                        barcodeMutation.mutate(data);
+                    }
+                }}
+            />
         </SafeAreaView>
     );
 }
@@ -618,22 +646,9 @@ const styles = StyleSheet.create({
         marginLeft: 4,
         marginBottom: 6,
     },
-    macroItem: {
-        alignItems: 'center',
-        gap: 4,
+    row: {
+        flexDirection: 'row',
     },
-    macroValueAbsolute: {
-        position: 'absolute',
-        fontSize: 10,
-        fontWeight: 'bold',
-    },
-    macroLabel: {
-        color: '#6B7280',
-        fontSize: 10,
-        fontWeight: '500',
-    },
-
-
     // Modal Styles
     modalOverlay: {
         flex: 1,
@@ -663,8 +678,5 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#111811',
         fontFamily: 'InterBold',
-    },
-    row: {
-        flexDirection: 'row',
     }
 });

@@ -2,44 +2,22 @@ import Colors from '@/constants/Colors';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setLogState } from '@/store/slices/logSlice';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, G } from 'react-native-svg';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const { meals } = useAppSelector((state) => state.log);
   const [refreshing, setRefreshing] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // Persistence: Load Logs
-  useEffect(() => {
-    const loadLogs = async () => {
-      try {
-        const savedjs = await AsyncStorage.getItem('meal_logs');
-        if (savedjs) {
-          dispatch(setLogState(JSON.parse(savedjs)));
-        }
-      } catch (e) {
-        console.error("Failed to load logs", e);
-      } finally {
-        setIsLoaded(true);
-      }
-    };
-    loadLogs();
-  }, []);
-
-  // Persistence: Save Logs
-  useEffect(() => {
-    if (isLoaded) {
-      AsyncStorage.setItem('meal_logs', JSON.stringify(meals));
-    }
-  }, [meals, isLoaded]);
+  // Memory logic removed, powered automatically by redux-persist globally!
 
   // Totals
   const consumed = meals.reduce((acc, meal) => acc + meal.calories, 0);
@@ -77,7 +55,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 85 }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
@@ -147,7 +125,7 @@ export default function HomeScreen() {
         {/* Quick Actions Grid */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
-          {renderQuickAction('add-circle', 'Log Meal', Colors.dark.primary, '/(tabs)/log')}
+          {renderQuickAction('add-circle', 'Log Meal', Colors.dark.primary, '/log')}
           {renderQuickAction('water', 'Hydration', '#0EA5E9', '/water-tracker')}
           {renderQuickAction('cart', 'Shopping', '#F59E0B', '/shopping-list')}
           {renderQuickAction('trophy', 'Awards', '#8B5CF6', '/achievements')}
@@ -200,7 +178,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 24,
-    paddingBottom: 100,
   },
   header: {
     flexDirection: 'row',

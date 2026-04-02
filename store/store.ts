@@ -1,27 +1,38 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
-// import { geminiApi } from './api/geminiApi';
+import { persistReducer, persistStore } from 'redux-persist';
+import { reduxStorage } from './mmkv';
 import authReducer from './slices/authSlice';
 import logReducer from './slices/logSlice';
 import notificationsReducer from './slices/notificationsSlice';
 import uiReducer from './slices/uiSlice';
 import waterReducer from './slices/waterSlice';
 
+const rootReducer = combineReducers({
+  auth: authReducer,
+  ui: uiReducer,
+  log: logReducer,
+  water: waterReducer,
+  notifications: notificationsReducer,
+});
+
+const persistConfig = {
+  key: 'root',
+  storage: reduxStorage,
+  whitelist: ['auth', 'log', 'water', 'ui', 'notifications'], // Persist core elements
+};
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
 export const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    ui: uiReducer,
-    log: logReducer,
-    water: waterReducer,
-    notifications: notificationsReducer,
-    // [geminiApi.reducerPath]: geminiApi.reducer,
-  },
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // For non-serializable data in actions if needed
+      serializableCheck: false, // For non-serializable data in actions (including persist actions)
     }),
-  // .concat(geminiApi.middleware),
 });
+
+export const persistor = persistStore(store);
 
 setupListeners(store.dispatch);
 

@@ -1,27 +1,59 @@
-name: MindfulBite CI
+name: Android Build and Publish
 
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
-  build:
+  build_and_publish:
+    name: Build & Publish Android
     runs-on: ubuntu-latest
-
+    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
 
-    - name: Type Check
-      run: npx tsc --noEmit
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pre-build Type Check
+        run: npx tsc --noEmit
+
+      - name: Build Android App (AAB) & Submit to Play Console
+        # The app.json should have a versionCode auto-increment setup or we pass commit hash
+        run: |
+          echo "Commit Hash: $GITHUB_SHA"
+          eas build --platform android --profile production --non-interactive --auto-submit
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          commit_hash: ${{ github.sha }}
+
+  local_build_check:
+    name: Local Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run Build Check (Typecheck)
+        run: npx tsc --noEmit
+      - name: Check Hash
+        run: echo "Commit Hash: $GITHUB_SHA"

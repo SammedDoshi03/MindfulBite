@@ -2,7 +2,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BlurView } from 'expo-blur';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet } from 'react-native';
 
@@ -15,12 +15,13 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].tabIconDefault,
+        tabBarActiveTintColor: Colors[(colorScheme ?? 'light') as 'light' | 'dark'].tint,
+        tabBarInactiveTintColor: Colors[(colorScheme ?? 'light') as 'light' | 'dark'].tabIconDefault,
         tabBarStyle: {
           position: 'absolute',
           bottom: 0,
@@ -58,20 +59,15 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="log"
+        listeners={() => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push('/log');
+          },
+        })}
         options={{
           title: 'Log Meal',
           tabBarIcon: ({ color }) => <TabBarIcon name="camera-outline" color={color} />,
-          tabBarStyle: {
-            display: 'none', // Hide tabs on camera screen if preferred, or keep it. keeping for now.
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: Platform.OS === 'ios' ? 85 : 65,
-            borderTopWidth: 0,
-            elevation: 0,
-            backgroundColor: 'transparent',
-          }
         }}
       />
       <Tabs.Screen

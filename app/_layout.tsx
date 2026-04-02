@@ -6,8 +6,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { Provider } from 'react-redux';
-import { store } from '../store/store';
-
 import { useColorScheme } from '@/components/useColorScheme';
 
 export {
@@ -24,6 +22,12 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PersistGate } from 'redux-persist/integration/react';
+import { persistor, store } from '../store/store';
+
+const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -50,9 +54,13 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
-      <SafeAreaProvider>
-        <RootLayoutNav />
-      </SafeAreaProvider>
+      <PersistGate loading={null} persistor={persistor}>
+        <QueryClientProvider client={queryClient}>
+          <SafeAreaProvider>
+            <RootLayoutNav />
+          </SafeAreaProvider>
+        </QueryClientProvider>
+      </PersistGate>
     </Provider>
   );
 }

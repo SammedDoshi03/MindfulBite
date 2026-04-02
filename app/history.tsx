@@ -3,15 +3,38 @@ import Colors from '@/constants/Colors';
 import { useAppSelector } from '@/store/hooks';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useMemo } from 'react';
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BarChart } from 'react-native-chart-kit';
 
 export default function HistoryScreen() {
     const router = useRouter();
     const { meals } = useAppSelector((state) => state.log);
+    const insets = useSafeAreaInsets();
 
     const sortedMeals = [...meals].sort((a, b) => b.timestamp - a.timestamp);
+
+    const last7Days = useMemo(() => {
+        const days: { label: string; dateString: string; calories: number }[] = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            days.push({
+                label: d.toLocaleDateString('en-US', { weekday: 'short' }),
+                dateString: d.toDateString(),
+                calories: 0
+            });
+        }
+        
+        meals.forEach(meal => {
+            const mealDate = new Date(meal.timestamp).toDateString();
+            const day = days.find(d => d.dateString === mealDate);
+            if (day) day.calories += meal.calories;
+        });
+        
+        return days;
+    }, [meals]);
 
     const renderItem = ({ item }: { item: any }) => (
         <View style={styles.mealItem}>
@@ -46,7 +69,7 @@ export default function HistoryScreen() {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { paddingBottom: insets.bottom }]}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#111811" />

@@ -7,9 +7,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
+    const insets = useSafeAreaInsets();
     const dispatch = useAppDispatch();
     const router = useRouter();
     const { user } = useAppSelector((state) => state.auth);
@@ -34,7 +35,7 @@ export default function ProfileScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 85 }]}>
 
                 {/* Profile Header */}
                 <View style={styles.header}>
@@ -107,7 +108,6 @@ const styles = StyleSheet.create({
     },
     content: {
         padding: 24,
-        paddingBottom: 48,
     },
     header: {
         alignItems: 'center',
