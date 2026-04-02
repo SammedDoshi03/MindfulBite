@@ -86,3 +86,22 @@ export const generateRecipes = async (preference: string): Promise<Recipe[]> => 
         return [];
     }
 };
+
+export const chatWithAI = async (message: string, context: string): Promise<string> => {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const prompt = `You are an expert AI Nutrition Coach for MindfulBite app.
+    The user's current status is:
+    ${context}
+    
+    User message: "${message}"
+    
+    Reply concisely, enthusiastically, and practically. Suggest foods they can eat right now, or provide solid health advice. Keep answers under 3 short paragraphs. No markdown bolding unless necessary.`;
+
+    try {
+        const result = await model.generateContent(prompt);
+        return result.response.text().trim();
+    } catch (error) {
+        console.error("Chat Error:", error);
+        return "I'm having trouble connecting to my nutrition brain right now. Try jumping back in later!";
+    }
+};

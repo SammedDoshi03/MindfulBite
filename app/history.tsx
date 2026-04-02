@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarChart } from 'react-native-chart-kit';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 export default function HistoryScreen() {
     const router = useRouter();
@@ -120,8 +121,13 @@ export default function HistoryScreen() {
                         <Text style={styles.emptyText}>No meals logged yet</Text>
                     </View>
                 ) : (
-                    sortedMeals.map(item => (
-                        <View key={item.id} style={styles.mealItem}>
+                    sortedMeals.map((item, index) => (
+                        <Animated.View 
+                            key={item.id} 
+                            entering={FadeInDown.delay(index * 100)} 
+                            layout={LinearTransition}
+                            style={styles.mealItem}
+                        >
                             <View style={styles.mealIcon}>
                                 <Text style={{ fontSize: 24 }}>🥗</Text>
                             </View>
@@ -153,7 +159,7 @@ export default function HistoryScreen() {
                                     <Text style={styles.macroText}>{item.fat}f</Text>
                                 </View>
                             </View>
-                        </View>
+                        </Animated.View>
                     ))
                 )}
             </ScrollView>

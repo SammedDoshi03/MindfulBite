@@ -6,14 +6,55 @@ import { logout } from '@/store/slices/authSlice';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 export default function ProfileScreen() {
     const insets = useSafeAreaInsets();
     const dispatch = useAppDispatch();
     const router = useRouter();
     const { user } = useAppSelector((state) => state.auth);
+    const { meals } = useAppSelector((state) => state.log);
+
+    const handleExportCSV = async () => {
+        try {
+            if (!meals || meals.length === 0) {
+                Alert.alert('No Data', 'You have no meals logged to export.');
+                return;
+            }
+
+            const header = 'Date,Time,Food Name,Calories,Protein (g),Carbs (g),Fat (g)\n';
+            const rows = meals.map(m => {
+                const dateObj = new Date(m.timestamp);
+                const date = dateObj.toLocaleDateString();
+                const time = dateObj.toLocaleTimeString();
+                // Escape commas in names
+                const safeName = m.name.replace(/,/g, '');
+                return `${date},${time},${safeName},${m.calories},${m.protein},${m.carbs},${m.fat}`;
+            }).join('\n');
+
+            const csvString = header + rows;
+            // @ts-ignore
+            const fileUri = FileSystem.documentDirectory + 'MindfulBite_Export.csv';
+            
+            // @ts-ignore
+            await FileSystem.writeAsStringAsync(fileUri, csvString, { encoding: FileSystem.EncodingType.UTF8 });
+            
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(fileUri, {
+                    mimeType: 'text/csv',
+                    dialogTitle: 'Export My Nutrition Data'
+                });
+            } else {
+                Alert.alert('Sharing Unavailable', 'Sharing is not available on your device.');
+            }
+        } catch (error) {
+            console.error("Export error: ", error);
+            Alert.alert('Error', 'Failed to export data.');
+        }
+    };
 
     const handleLogout = () => {
         dispatch(logout());
@@ -81,9 +122,22 @@ export default function ProfileScreen() {
                 {/* Preferences */}
                 <Text style={styles.sectionTitle}>Preferences</Text>
                 <View style={styles.sectionCard}>
+                    {renderMenuItem('sparkles', 'AI Nutrition Coach', 'Chat & advice', '/ai-coach', '#EC4899')}
+                    <View style={styles.divider} />
                     {renderMenuItem('notifications', 'Notifications', 'Reminders & Alerts', '/notifications-settings', '#EF4444')}
                     <View style={styles.divider} />
                     {renderMenuItem('help-circle', 'Help & Support', 'FAQs & Contact', '/help', '#10B981')}
+                    <View style={styles.divider} />
+                    <TouchableOpacity style={styles.menuItem} onPress={handleExportCSV}>
+                        <View style={[styles.menuIcon, { backgroundColor: '#F59E0B15' }]}>
+                            <Ionicons name="download-outline" size={24} color="#F59E0B" />
+                        </View>
+                        <View style={styles.menuText}>
+                            <Text style={styles.menuTitle}>Export Data</Text>
+                            <Text style={styles.menuSubtitle}>Download logs as CSV</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                    </TouchableOpacity>
                 </View>
 
                 <Button
