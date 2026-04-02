@@ -1,34 +1,36 @@
-# MindfulBite 🍎
-**Smart Calorie Tracking Powered by AI**
+# MindfulBite 🍏
+**Smart Calorie Tracking Powered by AI & React Native**
 
-MindfulBite is an advanced calorie and nutrition tracker built with React Native (Expo) that uses Google's Gemini AI to analyze food photos and automatically log meals. It features a beautiful, dynamic UI, robust state management, and offline persistence.
+MindfulBite is an advanced, production-grade calorie and nutrition tracker built with Expo. It utilizes **Google's Gemini AI** for computer vision food analysis, a **Native Barcode Scanner**, and an embedded **AI Nutrition Coach**. Designed with premium aesthetics, fluid animations, and a high-performance offline-first data layer.
 
-## 🌟 Key Features
+## 🌟 Next-Gen Features
 
-*   **📸 AI Food Analysis**: Snap a photo of your meal, and the Gemini API identifies the food and estimates calories, protein, carbs, and fat.
-*   **📊 Smart Dashboard**: Visualize your daily progress with animated rings and a timeline of your meals.
-*   **📈 Weekly Insights**: Track your history with interactive charts to see trends over the last 7 days.
-*   **💧 Water Tracker**: Stay hydrated with a dedicated tracker that resets daily and logs history.
-*   **🛒 Shopping List**: Manage your groceries with a persistent shopping list that survives app restarts.
-*   **🔔 Smart Notifications**: Customizable reminders for meals and hydration to keep you on track.
-*   **🏆 Achievements**: Earn badges for streaks and healthy habits.
-*   **⚙️ Personalized Goals**: Set and edit your calorie and macro targets based on your body stats using the Mifflin-St Jeor equation.
+*   **📸 AI Food Analysis:** Snap a photo of your meal. The Gemini API executes localized image manipulation and vision parsing to automatically detect food and exact macros.
+*   **🛒 Native Barcode Scanning:** Powered by `expo-camera` and `@tanstack/react-query`, scan any consumer packaged good to fetch real-time nutritional metrics from the OpenFoodFacts API.
+*   **🧠 AI Nutrition Coach:** Chat natively with an embedded Mindful Coach. The AI automatically ingests your daily Redux state context (Calories/Macros consumed) to give personalized health advice.
+*   **📊 Historic Tracking & Charts:** Beautiful daily progress SVG rings and interactive weekly UI charts powered by `react-native-chart-kit`.
+*   **💨 Lightning Fast Persistence:** Transitioned off AsyncStorage. Built entirely on **Redux Persist + MMKV** for synchronized, sub-millisecond offline storage.
+*   **🗂️ CSV Data Exports:** Native ability to format, sanitize, and share tracking history directly via an iOS/Android native share sheet utilizing `expo-sharing`.
+*   **✨ Fluid Micro-Animations:** Staggered list renderings and layout transitions elegantly powered by `react-native-reanimated`.
+*   **💧 Water Tracker:** Stay hydrated with a dedicated tracker that resets daily and logs history.
 
-## 🛠 Tech Stack
+## 🛠 Advanced Tech Stack
 
-*   **Framework**: [Expo](https://expo.dev/) (React Native)
+*   **Framework**: [Expo SDK](https://expo.dev/) (React Native)
 *   **Language**: TypeScript
-*   **State Management**: Redux Toolkit
-*   **Persistence**: AsyncStorage
-*   **AI**: Google Gemini API
-*   **Navigation**: Expo Router (File-based routing)
-*   **Charts**: react-native-chart-kit
+*   **State Management**: Redux Toolkit + MMKV + Redux Persist
+*   **Data Fetching:** TanStack React Query v5
+*   **AI Engine**: Google Gemini API (gemini-2.5-flash)
+*   **Native APIs**: Expo Camera, Expo Image Manipulator, Expo File System, Expo Sharing
+*   **Animations**: React Native Reanimated
+*   **Routing**: Expo Router (File-based navigation)
+*   **CI/CD**: Fully automated pipeline via GitHub Actions and Expo Application Services (EAS)
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 *   Node.js (LTS recommended)
-*   Expo Go app on your iOS or Android device
+*   React Native development environment (Due to native modules like MMKV and Camera, standard Expo Go will not work; create a dev client). 
 
 ### Installation
 
@@ -44,36 +46,36 @@ MindfulBite is an advanced calorie and nutrition tracker built with React Native
     ```
 
 3.  **Environment Setup**
-    Create a `.env` file in the root directory (copy from `.env.example`) and add your Google Gemini API Key:
+    The app securely expects an AI api key.
     ```bash
-    EXPO_PUBLIC_GEMINI_API_KEY=your_api_key_here
+    EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
     ```
 
-4.  **Run the App**
+4.  **Run Development Build (Native)**
+    Because this project uses native modules (`react-native-mmkv`, `expo-camera`), compile the app:
     ```bash
-    npm start
+    npx expo run:ios
+    # or
+    npx expo run:android
     ```
-    Scan the QR code with the Expo Go app on your phone to launch MindfulBite!
 
-## 📱 Project Structure
+## 📱 Architecture
 
 ```
 MindfulBite/
-├── app/                  # Screens and Navigation (Expo Router)
-│   ├── (tabs)/           # Main Tab Navigation
-│   ├── (auth)/           # Authentication Screens
-│   └── ...               # Feature Screens (Water, History, etc.)
-├── components/           # Reusable UI Components
-├── store/                # Redux State Management
-│   ├── slices/           # Feature Slices (Log, Water, Auth)
-│   └── store.ts          # Store Configuration
-├── services/             # External Services (Gemini API)
-└── assets/               # Images and Fonts
+├── app/                  # File-system routing using Expo Router
+│   ├── (tabs)/           # Dashboard, Profile
+│   ├── ai-coach.tsx      # Gemini powered Chat
+│   └── log.tsx           # Barcode & Camera API logic
+├── components/           # Extracted Reusable HOCs (Modals, Charts)
+├── store/                # MMKV persisted Redux store
+├── services/             # Gemini API networking layer
+└── .github/workflows/    # Automated CI/CD Pipelines
 ```
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are completely welcome! Please feel free to submit a Pull Request.
 
 ---
-Built with ❤️ using React Native & Gemini AI
+Built with ❤️ tracking health smarter.
